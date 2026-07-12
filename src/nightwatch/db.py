@@ -52,6 +52,16 @@ def _is_process_alive(pid: int) -> bool:
     except PermissionError:
         # Process exists but is owned by another user; treat as alive.
         return True
+
+    try:
+        with open(f"/proc/{pid}/status") as status_file:
+            for line in status_file:
+                if line.startswith("State:"):
+                    # A zombie still holds a pid (os.kill succeeds) but has
+                    # already exited and released its resources.
+                    return "zombie" not in line.lower()
+    except FileNotFoundError:
+        return False
     return True
 
 

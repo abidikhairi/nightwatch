@@ -1,5 +1,6 @@
 import sqlite3
 import subprocess
+import time
 from pathlib import Path
 
 from nightwatch.db import init_db, insert_process, prune_dead_processes
@@ -69,3 +70,28 @@ def test_prune_dead_processes_removes_only_dead_pids(tmp_path: Path) -> None:
     finally:
         alive_process.terminate()
         alive_process.wait()
+
+
+def test_prune_dead_processes_removes_zombie_pid(tmp_path: Path) -> None:
+    db_path = tmp_path / "db.sqlite3"
+    init_db(db_path)
+
+    # Deliberately never reaped (no .wait()/.poll()), so it lingers as a
+    # zombie: os.kill(pid, 0) still succeeds even though the process is gone.
+    zombie_process = subprocess.Popen(["true"])
+    time.sleep(0.5)
+
+    insert_process(
+        pid=zombie_process.pid,
+        repo_id="fake/zombie",
+        command="vllm serve fake/zombie",
+        started_by="tester",
+        db_path=db_path,
+    )
+
+    removed = prune_dead_processes(db_path)
+
+    assert removed == [zombie_process.pid]
+    with sqlite3.connect(db_path) as connection:
+        remaining = connection.execute("SELECT pid FROM vllm_processes").fetchall()
+    assert remaining == []
