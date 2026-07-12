@@ -10,9 +10,8 @@ from textual.widgets import Footer, Header, Input, Markdown, OptionList
 from textual.widgets.option_list import Option
 
 from nightwatch.hf import (
-    ModelDetails,
     ModelSummary,
-    Recommendation,
+    format_details_markdown,
     get_model_details,
     recommend_deployment,
     search_models,
@@ -25,61 +24,10 @@ _INITIAL_MESSAGE = "Type to search Hugging Face models."
 _LOADING_MESSAGE = "Loading details..."
 
 
-def _format_bytes(num_bytes: int) -> str:
-    gb = num_bytes / 1_000_000_000
-    return f"{gb:.2f} GB"
-
-
-def _format_details_markdown(details: ModelDetails, recommendation: Recommendation) -> str:
-    params = f"{details.num_params:,}" if details.num_params is not None else "unknown"
-    dtype = details.dtype or "unknown"
-    context = f"{details.max_context_length:,} tokens" if details.max_context_length else "unknown"
-    chat_template = "yes" if details.has_chat_template else "no"
-    tool_support = "yes" if details.supports_tools else "no"
-
-    if details.quantization_config:
-        method = details.quantization_config.get("quant_method", "unknown")
-        bits = details.quantization_config.get("bits", "?")
-        quantization = f"{method}, {bits}-bit"
-    else:
-        quantization = "none (full precision)"
-
-    lines = [
-        f"# {details.repo_id}",
-        "",
-        f"- **Parameters**: {params}",
-        f"- **Size on disk**: {_format_bytes(details.size_on_disk_bytes)}",
-        f"- **Dtype**: {dtype}",
-        f"- **Max context length**: {context}",
-        f"- **Chat template**: {chat_template}",
-        f"- **Tool support**: {tool_support}",
-        f"- **Quantization**: {quantization}",
-        "",
-        f"## Recommendation ({recommendation.num_users} concurrent users)",
-        "",
-        f"- **Estimated memory**: {recommendation.estimated_memory_gb} GB",
-        f"- **GPU**: {recommendation.gpu_recommendation}",
-        f"- **Tensor parallel size**: {recommendation.tensor_parallel_size}",
-        f"- **GPU memory utilization**: {recommendation.gpu_memory_utilization}",
-        f"- **Max concurrent sequences**: {recommendation.max_num_seqs}",
-    ]
-    if recommendation.quantization_advice:
-        lines.append(f"- **Advice**: {recommendation.quantization_advice}")
-
-    lines += [
-        "",
-        "```bash",
-        recommendation.serve_command,
-        "```",
-    ]
-
-    return "\n".join(lines)
-
-
 class ExploreScreen(Screen):
     TITLE = "Explore Models"
 
-    BINDINGS = [("escape", "pop_screen", "Back")]
+    BINDINGS = [("escape", "app.pop_screen", "Back")]
 
     DEFAULT_CSS = """
     ExploreScreen #search-pane {
@@ -155,6 +103,6 @@ class ExploreScreen(Screen):
         try:
             details = await asyncio.to_thread(get_model_details, repo_id)
             recommendation = recommend_deployment(details, num_users=10)
-            self.details_markdown = _format_details_markdown(details, recommendation)
+            self.details_markdown = format_details_markdown(details, recommendation)
         except Exception as exc:
             self.details_markdown = f"Failed to load details for {repo_id}: {exc}"

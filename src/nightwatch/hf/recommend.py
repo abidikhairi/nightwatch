@@ -1,3 +1,5 @@
+import shlex
+
 from nightwatch.hf.models import ModelDetails, Recommendation
 
 _DTYPE_BYTES = {
@@ -81,7 +83,28 @@ def _dtype_flag(details: ModelDetails) -> str:
     return _DEFAULT_DTYPE_FLAG
 
 
-def _build_serve_command(
+def build_serve_args(
+    repo_id: str,
+    tensor_parallel_size: int,
+    gpu_memory_utilization: float,
+    max_num_seqs: int,
+    max_model_len: int | None,
+    dtype_flag: str,
+    quantization_flag: str | None,
+) -> list[str]:
+    args = ["vllm", "serve", repo_id]
+    args += ["--tensor-parallel-size", str(tensor_parallel_size)]
+    args += ["--gpu-memory-utilization", str(gpu_memory_utilization)]
+    args += ["--max-num-seqs", str(max_num_seqs)]
+    if max_model_len is not None:
+        args += ["--max-model-len", str(max_model_len)]
+    args += ["--dtype", dtype_flag]
+    if quantization_flag is not None:
+        args += ["--quantization", quantization_flag]
+    return args
+
+
+def build_serve_command(
     repo_id: str,
     tensor_parallel_size: int,
     gpu_memory_utilization: float,
@@ -90,16 +113,16 @@ def _build_serve_command(
     dtype_flag: str,
     quantization_flag: str | None,
 ) -> str:
-    parts = ["vllm", "serve", repo_id]
-    parts += ["--tensor-parallel-size", str(tensor_parallel_size)]
-    parts += ["--gpu-memory-utilization", str(gpu_memory_utilization)]
-    parts += ["--max-num-seqs", str(max_num_seqs)]
-    if max_model_len is not None:
-        parts += ["--max-model-len", str(max_model_len)]
-    parts += ["--dtype", dtype_flag]
-    if quantization_flag is not None:
-        parts += ["--quantization", quantization_flag]
-    return " ".join(parts)
+    args = build_serve_args(
+        repo_id=repo_id,
+        tensor_parallel_size=tensor_parallel_size,
+        gpu_memory_utilization=gpu_memory_utilization,
+        max_num_seqs=max_num_seqs,
+        max_model_len=max_model_len,
+        dtype_flag=dtype_flag,
+        quantization_flag=quantization_flag,
+    )
+    return " ".join(shlex.quote(arg) for arg in args)
 
 
 def recommend_deployment(details: ModelDetails, num_users: int = 10) -> Recommendation:
@@ -148,7 +171,7 @@ def recommend_deployment(details: ModelDetails, num_users: int = 10) -> Recommen
     dtype_flag = _dtype_flag(details)
     quantization_flag = _quantization_flag(details)
 
-    serve_command = _build_serve_command(
+    serve_command = build_serve_command(
         repo_id=details.repo_id,
         tensor_parallel_size=tensor_parallel_size,
         gpu_memory_utilization=gpu_memory_utilization,

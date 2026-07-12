@@ -1,6 +1,10 @@
 from nightwatch.hf.client import get_model_details as get_model_details
 from nightwatch.hf.client import search_models as search_models
+from nightwatch.hf.format import format_details_markdown as format_details_markdown
+from nightwatch.hf.format import format_model_facts_markdown as format_model_facts_markdown
 from nightwatch.hf.models import ModelDetails as ModelDetails
 from nightwatch.hf.models import ModelSummary as ModelSummary
 from nightwatch.hf.models import Recommendation as Recommendation
+from nightwatch.hf.recommend import build_serve_args as build_serve_args
+from nightwatch.hf.recommend import build_serve_command as build_serve_command
 from nightwatch.hf.recommend import recommend_deployment as recommend_deployment
