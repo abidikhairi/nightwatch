@@ -7,9 +7,19 @@ from textual.screen import Screen
 from textual.widgets import DataTable, Footer, Header
 
 from nightwatch.db import list_processes, prune_dead_processes
+from nightwatch.process import get_process_memory_bytes
 
 if TYPE_CHECKING:
     from nightwatch.app import NightwatchApp
+
+
+def _format_memory(num_bytes: int | None) -> str:
+    if num_bytes is None:
+        return "N/A"
+    mb = num_bytes / 1_000_000
+    if mb < 1024:
+        return f"{mb:.1f} MB"
+    return f"{mb / 1024:.2f} GB"
 
 
 class MonitorScreen(Screen):
@@ -29,7 +39,7 @@ class MonitorScreen(Screen):
         table = self.query_one(DataTable)
         table.cursor_type = "row"
         table.zebra_stripes = True
-        table.add_columns("PID", "Repo ID", "Command", "Started At", "Started By", "Status")
+        table.add_columns("PID", "Repo ID", "Memory", "Started At", "Started By", "Status")
         self.action_refresh_processes()
 
     def action_refresh_processes(self) -> None:
@@ -46,10 +56,11 @@ class MonitorScreen(Screen):
         table = self.query_one(DataTable)
         table.clear()
         for process in processes:
+            memory = await asyncio.to_thread(get_process_memory_bytes, process.pid)
             table.add_row(
                 str(process.pid),
                 process.repo_id,
-                process.command,
+                _format_memory(memory),
                 process.started_at,
                 process.started_by,
                 process.status,

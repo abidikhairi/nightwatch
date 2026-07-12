@@ -25,3 +25,14 @@ def launch_vllm_serve(
         db_path=db_path,
     )
     return process.pid
+
+
+def get_process_memory_bytes(pid: int) -> int | None:
+    try:
+        with open(f"/proc/{pid}/status") as status_file:
+            for line in status_file:
+                if line.startswith("VmRSS:"):
+                    return int(line.split()[1]) * 1024
+    except (FileNotFoundError, ProcessLookupError, PermissionError):
+        return None
+    return None
