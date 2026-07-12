@@ -1,5 +1,6 @@
 import os
 import sqlite3
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -63,3 +64,26 @@ def prune_dead_processes(db_path: Path = DEFAULT_DB_PATH) -> list[int]:
                 connection.execute("DELETE FROM vllm_processes WHERE id = ?", (row_id,))
                 removed_pids.append(pid)
     return removed_pids
+
+
+@dataclass
+class ProcessRecord:
+    id: int
+    pid: int
+    repo_id: str
+    command: str
+    started_at: str
+    started_by: str
+    status: str
+
+
+def list_processes(db_path: Path = DEFAULT_DB_PATH) -> list[ProcessRecord]:
+    with sqlite3.connect(db_path) as connection:
+        rows = connection.execute(
+            """
+            SELECT id, pid, repo_id, command, started_at, started_by, status
+            FROM vllm_processes
+            ORDER BY started_at DESC
+            """
+        ).fetchall()
+    return [ProcessRecord(*row) for row in rows]
