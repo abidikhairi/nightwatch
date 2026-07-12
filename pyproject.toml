@@ -1,0 +1,37 @@
+[project]
+name = "nightwatch"
+version = "0.1.0"
+description = "Interactive CLI for serving models with vLLM without hand-writing the serve command each time"
+readme = "README.md"
+authors = [
+    { name = "abidikhairi", email = "abidikhairi.1337@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "textual>=8.2.8",
+]
+
+[project.scripts]
+nightwatch = "nightwatch:main"
+
+[build-system]
+requires = ["uv_build>=0.9.18,<0.10.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "ruff>=0.15.21",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
