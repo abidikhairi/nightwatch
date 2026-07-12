@@ -3,10 +3,30 @@ from pathlib import Path
 
 from textual import work
 from textual.app import App, ComposeResult
+from textual.containers import Container
 from textual.widgets import Footer, Header, Static
 
 from nightwatch.db import DEFAULT_DB_PATH, init_db, prune_dead_processes
 from nightwatch.screens import ExploreScreen, MonitorScreen, ServeModelScreen
+
+_BANNER = """\
+███╗   ██╗██╗ ██████╗ ██╗  ██╗████████╗
+████╗  ██║██║██╔════╝ ██║  ██║╚══██╔══╝
+██╔██╗ ██║██║██║  ███╗███████║   ██║
+██║╚██╗██║██║██║   ██║██╔══██║   ██║
+██║ ╚████║██║╚██████╔╝██║  ██║   ██║
+╚═╝  ╚═══╝╚═╝ ╚═════╝ ╚═╝  ╚═╝   ╚═╝
+
+██╗    ██╗ █████╗ ████████╗ ██████╗██╗  ██╗
+██║    ██║██╔══██╗╚══██╔══╝██╔════╝██║  ██║
+██║ █╗ ██║███████║   ██║   ██║     ███████║
+██║███╗██║██╔══██║   ██║   ██║     ██╔══██║
+╚███╔███╔╝██║  ██║   ██║   ╚██████╗██║  ██║
+ ╚══╝╚══╝ ╚═╝  ╚═╝   ╚═╝    ╚═════╝╚═╝  ╚═╝\
+"""
+
+_TAGLINE = "Interactive TUI for serving models with vLLM"
+_HINTS = "[b]s[/b] Serve   [b]e[/b] Explore   [b]m[/b] Monitor   [b]q[/b] Quit"
 
 
 class NightwatchApp(App):
@@ -19,6 +39,32 @@ class NightwatchApp(App):
         ("e", "explore", "Explore Models"),
         ("m", "monitor", "Monitor vLLM")
     ]
+
+    CSS = """
+    #welcome {
+        align: center middle;
+        height: 1fr;
+    }
+
+    #banner {
+        text-align: center;
+        color: $accent;
+        width: auto;
+    }
+
+    #tagline {
+        text-align: center;
+        width: auto;
+        margin-top: 1;
+    }
+
+    #hints {
+        text-align: center;
+        width: auto;
+        color: $text-muted;
+        margin-top: 1;
+    }
+    """
 
     def __init__(self, db_path: Path = DEFAULT_DB_PATH) -> None:
         super().__init__()
@@ -34,7 +80,10 @@ class NightwatchApp(App):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Static("nightwatch is warming up...")
+        with Container(id="welcome"):
+            yield Static(_BANNER, id="banner")
+            yield Static(_TAGLINE, id="tagline")
+            yield Static(_HINTS, id="hints")
         yield Footer()
 
     def action_serve_model(self) -> None:
