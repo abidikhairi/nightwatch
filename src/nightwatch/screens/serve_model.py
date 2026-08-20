@@ -30,7 +30,7 @@ from nightwatch.hf import (
     recommend_deployment,
     search_models,
 )
-from nightwatch.process import launch_vllm_serve
+from nightwatch.process import VllmNotFoundError, launch_vllm_serve
 from nightwatch.screens.confirm import ConfirmScreen
 
 if TYPE_CHECKING:
@@ -305,6 +305,9 @@ class ServeModelScreen(Screen):
                 command_display=command_display,
                 db_path=app.db_path,
             )
+        except VllmNotFoundError as exc:
+            self._set_run_status(str(exc))
+            return
         except Exception as exc:
             self._set_run_status(f"Failed to start: {exc}")
             return

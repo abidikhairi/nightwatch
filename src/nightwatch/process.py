@@ -1,8 +1,15 @@
+import shutil  
 import subprocess
 from getpass import getuser
 from pathlib import Path
 
 from nightwatch.db import DEFAULT_DB_PATH, insert_process
+
+
+
+class VllmNotFoundError(Exception):
+    """Raised when the vllm executable can not be found in PATH."""
+    pass
 
 
 def launch_vllm_serve(
@@ -11,12 +18,25 @@ def launch_vllm_serve(
     command_display: str,
     db_path: Path = DEFAULT_DB_PATH,
 ) -> int:
-    process = subprocess.Popen(
-        args,
-        start_new_session=True,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
+
+    executable = args[0]
+    if shutil.which(executable) is None:
+        message =  f"'{executable}' not found: the command is not in your PATH."
+        if executable == "vllm":
+            message += " Install it with: pip install vllm"
+        raise VllmNotFoundError(message)
+    
+    try:
+        process = subprocess.Popen(
+            args,
+            start_new_session=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    except FileNotFoundError as error:
+        raise VllmNotFoundError(
+            f"Failed to launch '{executable}': {error}"
+        ) from error
     insert_process(
         pid=process.pid,
         repo_id=repo_id,
