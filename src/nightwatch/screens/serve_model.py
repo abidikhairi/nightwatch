@@ -179,26 +179,30 @@ class ServeModelScreen(Screen):
     async def _populate_params_form(self, recommendation: Recommendation) -> None:
         form = self.query_one("#params-form", Vertical)
         await form.remove_children()
-        await form.mount_all(
-            [
-                Label("Tensor parallel size"),
-                Input(value=str(recommendation.tensor_parallel_size), id="tp-input"),
-                Label("GPU memory utilization"),
-                Input(value=str(recommendation.gpu_memory_utilization), id="gpu-util-input"),
-                Label("Max concurrent sequences"),
-                Input(value=str(recommendation.max_num_seqs), id="max-seqs-input"),
-                Label("Max model length"),
-                Input(value=str(recommendation.max_model_len or ""), id="max-len-input"),
-                Label("Dtype"),
-                Select(
-                    [(dtype, dtype) for dtype in _DTYPE_OPTIONS],
-                    value=recommendation.dtype_flag,
-                    id="dtype-select",
-                ),
-                Button("Run this model", id="run-button", variant="primary"),
-                Static("", id="run-status"),
-            ]
-        )
+        widgets = [
+            Label("Tensor parallel size"),
+            Input(value=str(recommendation.tensor_parallel_size), id="tp-input"),
+            Label("GPU memory utilization"),
+            Input(value=str(recommendation.gpu_memory_utilization), id="gpu-util-input"),
+            Label("Max concurrent sequences"),
+            Input(value=str(recommendation.max_num_seqs), id="max-seqs-input"),
+            Label("Max model length"),
+            Input(value=str(recommendation.max_model_len or ""), id="max-len-input"),
+            Label("Dtype"),
+            Select(
+                [(dtype, dtype) for dtype in _DTYPE_OPTIONS],
+                value=recommendation.dtype_flag,
+                id="dtype-select",
+            ),
+        ]
+
+        if recommendation.chat_template_warning is not None:
+            widgets.append(Label(f"⚠ {recommendation.chat_template_warning}"))
+
+        widgets.append(Button("Run this model", id="run-button", variant="primary"))
+        widgets.append(Static("", id="run-status"))
+
+        await form.mount_all(widgets)
 
     def _set_run_status(self, message: str) -> None:
         self.query_one("#run-status", Static).update(message)

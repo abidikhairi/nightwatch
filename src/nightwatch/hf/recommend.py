@@ -127,11 +127,18 @@ def build_serve_command(
 
 def recommend_deployment(details: ModelDetails, num_users: int = 10) -> Recommendation:
     if details.num_params is None:
+        chat_template_warning = None
+        if not details.has_chat_template:
+            chat_template_warning = (
+                "This model has no chat template — it may not respond properly "
+                "to conversational prompts."
+            )
         return Recommendation(
             num_users=num_users,
             estimated_memory_gb=0.0,
             gpu_recommendation="unknown (parameter count unavailable)",
             quantization_advice=None,
+            chat_template_warning=chat_template_warning,
             tensor_parallel_size=1,
             gpu_memory_utilization=_DEFAULT_GPU_MEMORY_UTILIZATION,
             max_num_seqs=num_users,
@@ -164,6 +171,13 @@ def recommend_deployment(details: ModelDetails, num_users: int = 10) -> Recommen
             "estimate reflects model weights only."
         )
 
+    chat_template_warning = None
+    if not details.has_chat_template:
+        chat_template_warning = (
+            "This model has no chat template — it may not respond properly "
+            "to conversational prompts."
+        )
+
     tensor_parallel_size = _tensor_parallel_size(total_memory_gb)
     gpu_memory_utilization = _DEFAULT_GPU_MEMORY_UTILIZATION
     max_num_seqs = num_users
@@ -186,6 +200,7 @@ def recommend_deployment(details: ModelDetails, num_users: int = 10) -> Recommen
         estimated_memory_gb=round(total_memory_gb, 2),
         gpu_recommendation=_gpu_tier(total_memory_gb),
         quantization_advice=quantization_advice,
+        chat_template_warning=chat_template_warning,
         tensor_parallel_size=tensor_parallel_size,
         gpu_memory_utilization=gpu_memory_utilization,
         max_num_seqs=max_num_seqs,
