@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 _SEARCH_DEBOUNCE_SECONDS = 0.35
 _SEARCH_RESULT_LIMIT = 20
 _DEFAULT_NUM_USERS = 10
-_DTYPE_OPTIONS = ("bfloat16", "float16", "float32", "auto")
+_DTYPE_OPTIONS = ("bfloat16", "float16", "float32", "int8", "auto")
 
 _INITIAL_MESSAGE = "Search and select a model to build a `vllm serve` command."
 _LOADING_MESSAGE = "Fetching model info..."
