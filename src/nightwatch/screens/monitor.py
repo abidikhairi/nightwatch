@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, cast
 from textual import work
 from textual.app import ComposeResult
 from textual.screen import Screen
-from textual.widgets import DataTable, Footer, Header
+from textual.widgets import DataTable, Footer, Header, Static
 
 from nightwatch.db import list_processes, prune_dead_processes
 from nightwatch.process import get_process_memory_bytes
@@ -30,9 +30,21 @@ class MonitorScreen(Screen):
         ("r", "refresh_processes", "Refresh"),
     ]
 
+    DEFAULT_CSS = """
+    MonitorScreen #empty-state {
+        display: none;
+        padding: 1 2;
+        color: $text-muted;
+    }
+    """
+
     def compose(self) -> ComposeResult:
         yield Header()
         yield DataTable(id="processes-table")
+        yield Static(
+            "No vLLM processes yet. Launch one from the Serve screen.",
+            id="empty-state",
+        )
         yield Footer()
 
     def on_mount(self) -> None:
@@ -54,7 +66,14 @@ class MonitorScreen(Screen):
         processes = await asyncio.to_thread(list_processes, db_path)
 
         table = self.query_one(DataTable)
+        empty_state = self.query_one("#empty-state", Static)
         table.clear()
+
+        if not processes:
+            empty_state.display = True
+            return
+
+        empty_state.display = False
         for process in processes:
             memory = await asyncio.to_thread(get_process_memory_bytes, process.pid)
             table.add_row(
