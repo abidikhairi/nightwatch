@@ -87,7 +87,7 @@ class ServeModelScreen(Screen):
     }
 
     ServeModelScreen #params-form Select {
-        height: 1;
+        height: 3;
         border: none;
     }
 
