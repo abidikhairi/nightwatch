@@ -14,7 +14,7 @@ _KV_CACHE_DTYPE_BYTES = 2
 
 _BYTES_PER_GB = 1_000_000_000
 
-_SINGLE_GPU_CAPACITY_GB = 80
+_SINGLE_GPU_CAPACITY_GB = 128 # DGX Spark/GB10 unified memory capacity
 _DEFAULT_GPU_MEMORY_UTILIZATION = 0.9
 _DEFAULT_DTYPE_FLAG = "auto"
 
@@ -48,13 +48,15 @@ def _kv_cache_bytes(details: ModelDetails, num_users: int) -> int | None:
 
 
 def _gpu_tier(total_memory_gb: float) -> str:
-    if total_memory_gb <= 24:
-        return "single consumer GPU (RTX 4090/3090, 24GB)"
-    if total_memory_gb <= 48:
-        return "single prosumer/datacenter GPU (L40S/A6000, 48GB)"
     if total_memory_gb <= _SINGLE_GPU_CAPACITY_GB:
-        return "single datacenter GPU (A100/H100, 80GB)"
-    return "multi-GPU tensor-parallel deployment (model does not fit on a single 80GB GPU)"
+        return (
+            f"fits within single-node unified memory "
+            f"({_SINGLE_GPU_CAPACITY_GB} GB, e.g., DGX Spark/GB10)"
+        )
+    return (
+        f"exceeds single-node unified memory capacity "
+        f"({_SINGLE_GPU_CAPACITY_GB}GB) — would require multi-node deployment"
+    )
 
 
 def _next_power_of_two(n: int) -> int:
