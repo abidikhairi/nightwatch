@@ -9,12 +9,21 @@ _api = HfApi()
 
 _WEIGHT_FILE_SUFFIXES = (".safetensors", ".bin")
 
+# vLLM only serves generative text models. Filtering server-side keeps the
+# result limit from being spent on models that can't be deployed.
+_SERVABLE_PIPELINE_TAG = "text-generation"
+
 
 def search_models(query: str, limit: int = 20) -> list[ModelSummary]:
     if not query.strip():
         return []
 
-    results = _api.list_models(search=query, limit=limit, sort="downloads")
+    results = _api.list_models(
+        search=query,
+        pipeline_tag=_SERVABLE_PIPELINE_TAG, 
+        limit=limit, 
+        sort="downloads",
+    )
     return [
         ModelSummary(
             repo_id=model.id,

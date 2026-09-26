@@ -109,7 +109,7 @@ class ServeModelScreen(Screen):
         yield Header()
         with Horizontal():
             with Vertical(id="search-pane"):
-                yield Input(placeholder="Search Hugging Face models...", id="search-box")
+                yield Input(placeholder="Search text-generation models...", id="search-box")
                 yield OptionList(id="results")
                 yield Input(
                     placeholder=f"Concurrent users (default {_DEFAULT_NUM_USERS})",
