@@ -1,13 +1,11 @@
 from dataclasses import dataclass
 
-
 @dataclass
 class ModelSummary:
     repo_id: str
     downloads: int
     likes: int
     pipeline_tag: str | None
-
 
 @dataclass
 class ModelDetails:
@@ -24,13 +22,13 @@ class ModelDetails:
     num_attention_heads: int | None
     num_key_value_heads: int | None
 
-
 @dataclass
 class Recommendation:
     num_users: int
     estimated_memory_gb: float
     gpu_recommendation: str
     quantization_advice: str | None
+    chat_template_warning: str | None
     tensor_parallel_size: int
     gpu_memory_utilization: float
     max_num_seqs: int
