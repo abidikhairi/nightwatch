@@ -49,11 +49,8 @@ def format_details_markdown(details: ModelDetails, recommendation: Recommendatio
     if recommendation.quantization_advice:
         lines.append(f"- **Advice**: {recommendation.quantization_advice}")
 
-    lines += [
-        "",
-        "```bash",
-        recommendation.serve_command,
-        "```",
-    ]
+    lines += [ "",
+              f"`{recommendation.serve_command}`", 
+        ]
 
     return "\n".join(lines)
