@@ -22,6 +22,7 @@ def test_init_db_creates_file_and_table(tmp_path: Path) -> None:
         "pid": "INTEGER",
         "repo_id": "TEXT",
         "command": "TEXT",
+        "port": "INTEGER",
         "started_at": "TEXT",
         "started_by": "TEXT",
         "status": "TEXT",
@@ -47,6 +48,7 @@ def test_prune_dead_processes_removes_only_dead_pids(tmp_path: Path) -> None:
             pid=alive_process.pid,
             repo_id="real/alive",
             command="vllm serve real/alive",
+            port=8001,
             started_by="tester",
             db_path=db_path,
         )
@@ -57,6 +59,7 @@ def test_prune_dead_processes_removes_only_dead_pids(tmp_path: Path) -> None:
             pid=dead_process.pid,
             repo_id="fake/dead",
             command="vllm serve fake/dead",
+            port=8002,
             started_by="tester",
             db_path=db_path,
         )
@@ -85,6 +88,7 @@ def test_prune_dead_processes_removes_zombie_pid(tmp_path: Path) -> None:
         pid=zombie_process.pid,
         repo_id="fake/zombie",
         command="vllm serve fake/zombie",
+        port=8003,
         started_by="tester",
         db_path=db_path,
     )

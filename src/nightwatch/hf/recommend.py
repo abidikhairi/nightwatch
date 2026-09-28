@@ -93,6 +93,7 @@ def build_serve_args(
     max_model_len: int | None,
     dtype_flag: str,
     quantization_flag: str | None,
+    port: int,
 ) -> list[str]:
     args = ["vllm", "serve", repo_id]
     args += ["--tensor-parallel-size", str(tensor_parallel_size)]
@@ -103,6 +104,7 @@ def build_serve_args(
     args += ["--dtype", dtype_flag]
     if quantization_flag is not None:
         args += ["--quantization", quantization_flag]
+    args += ["--port", str(port)]
     return args
 
 
@@ -114,6 +116,7 @@ def build_serve_command(
     max_model_len: int | None,
     dtype_flag: str,
     quantization_flag: str | None,
+    port: int,
 ) -> str:
     args = build_serve_args(
         repo_id=repo_id,
@@ -123,11 +126,14 @@ def build_serve_command(
         max_model_len=max_model_len,
         dtype_flag=dtype_flag,
         quantization_flag=quantization_flag,
+        port=port,
     )
     return " ".join(shlex.quote(arg) for arg in args)
 
 
-def recommend_deployment(details: ModelDetails, num_users: int = 10) -> Recommendation:
+def recommend_deployment(
+    details: ModelDetails, port: int, num_users: int = 10
+) -> Recommendation:
     if details.num_params is None:
         chat_template_warning = None
         if not details.has_chat_template:
@@ -147,7 +153,17 @@ def recommend_deployment(details: ModelDetails, num_users: int = 10) -> Recommen
             max_model_len=details.max_context_length,
             dtype_flag=_dtype_flag(details),
             quantization_flag=_quantization_flag(details),
-            serve_command=f"vllm serve {details.repo_id}",
+            serve_command=build_serve_command(
+                repo_id=details.repo_id,
+                tensor_parallel_size=1,
+                gpu_memory_utilization=_DEFAULT_GPU_MEMORY_UTILIZATION,
+                max_num_seqs=num_users,
+                max_model_len=details.max_context_length,
+                dtype_flag=_dtype_flag(details),
+                quantization_flag=_quantization_flag(details),
+                port=port,
+            ),
+            port=port,
         )
 
     weight_memory_bytes = details.num_params * _bytes_per_param(details)
@@ -195,6 +211,7 @@ def recommend_deployment(details: ModelDetails, num_users: int = 10) -> Recommen
         max_model_len=max_model_len,
         dtype_flag=dtype_flag,
         quantization_flag=quantization_flag,
+        port=port,
     )
 
     return Recommendation(
@@ -210,4 +227,5 @@ def recommend_deployment(details: ModelDetails, num_users: int = 10) -> Recommen
         dtype_flag=dtype_flag,
         quantization_flag=quantization_flag,
         serve_command=serve_command,
+        port=port,
     )

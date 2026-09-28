@@ -30,7 +30,7 @@ from nightwatch.hf import (
     recommend_deployment,
     search_models,
 )
-from nightwatch.process import VllmNotFoundError, launch_vllm_serve
+from nightwatch.process import VllmNotFoundError, find_free_port, launch_vllm_serveserve 
 from nightwatch.screens.confirm import ConfirmScreen
 
 if TYPE_CHECKING:
@@ -104,6 +104,7 @@ class ServeModelScreen(Screen):
         super().__init__()
         self._debounce_timer: Timer | None = None
         self._quantization_flag: str | None = None
+        self._port: int | None = None
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -173,6 +174,7 @@ class ServeModelScreen(Screen):
         num_users = self._read_num_users()
         if num_users is None:
             return
+        self._port = find_free_port()
         self.model_info_markdown = _LOADING_MESSAGE
         self._fetch_details(self.selected_repo_id, num_users)
 
@@ -221,7 +223,7 @@ class ServeModelScreen(Screen):
     async def _fetch_details(self, repo_id: str, num_users: int) -> None:
         try:
             details = await asyncio.to_thread(get_model_details, repo_id)
-            recommendation = recommend_deployment(details, num_users=num_users)
+            recommendation = recommend_deployment(details, port=self._port, num_users=num_users)
             self._quantization_flag = recommendation.quantization_flag
             self.model_info_markdown = format_model_facts_markdown(details)
             await self._populate_params_form(recommendation)
@@ -231,6 +233,9 @@ class ServeModelScreen(Screen):
     def _handle_run_button(self) -> None:
         repo_id = self.selected_repo_id
         if repo_id is None:
+            return
+        if self._port is None:
+            self._set_run_status("No port allocated.Select a model again.")
             return
 
         try:
@@ -245,17 +250,18 @@ class ServeModelScreen(Screen):
             max_num_seqs = int(self.query_one("#max-seqs-input", Input).value)
             if max_num_seqs < 1:
                 raise ValueError("max concurrent sequences must be at least 1")
-
+            
             max_len_raw = self.query_one("#max-len-input", Input).value.strip()
             max_model_len = int(max_len_raw) if max_len_raw else None
             if max_model_len is not None and max_model_len < 1:
                 raise ValueError("max model length must be at least 1")
-
+            
             dtype_value = self.query_one("#dtype-select", Select).value
             dtype_flag = str(dtype_value) if dtype_value else _DTYPE_OPTIONS[-1]
         except ValueError as exc:
             self._set_run_status(f"Invalid parameter: {exc}")
             return
+        
 
         self._confirm_and_run(
             repo_id=repo_id,
@@ -264,6 +270,7 @@ class ServeModelScreen(Screen):
             max_num_seqs=max_num_seqs,
             max_model_len=max_model_len,
             dtype_flag=dtype_flag,
+            port=self._port,
         )
 
     @work(exclusive=True, group="run")
@@ -275,6 +282,7 @@ class ServeModelScreen(Screen):
         max_num_seqs: int,
         max_model_len: int | None,
         dtype_flag: str,
+        port: int,
     ) -> None:
         args = build_serve_args(
             repo_id=repo_id,
@@ -284,6 +292,7 @@ class ServeModelScreen(Screen):
             max_model_len=max_model_len,
             dtype_flag=dtype_flag,
             quantization_flag=self._quantization_flag,
+            port=port,
         )
         command_display = build_serve_command(
             repo_id=repo_id,
@@ -293,6 +302,7 @@ class ServeModelScreen(Screen):
             max_model_len=max_model_len,
             dtype_flag=dtype_flag,
             quantization_flag=self._quantization_flag,
+            port=port,
         )
 
         confirmed = await self.app.push_screen_wait(
@@ -307,6 +317,7 @@ class ServeModelScreen(Screen):
                 args=args,
                 repo_id=repo_id,
                 command_display=command_display,
+                port=port,
                 db_path=app.db_path,
             )
         except VllmNotFoundError as exc:

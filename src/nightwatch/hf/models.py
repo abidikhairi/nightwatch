@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+
 @dataclass
 class ModelSummary:
     repo_id: str
@@ -36,3 +37,4 @@ class Recommendation:
     dtype_flag: str
     quantization_flag: str | None
     serve_command: str
+    port: int
