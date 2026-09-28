@@ -16,6 +16,7 @@ def test_launch_vllm_serve_records_process(tmp_path: Path) -> None:
         args=["sleep", "5"],
         repo_id="fake/repo",
         command_display="vllm serve fake/repo --tensor-parallel-size 1",
+        port=8001,
         db_path=db_path,
     )
 
@@ -24,14 +25,15 @@ def test_launch_vllm_serve_records_process(tmp_path: Path) -> None:
 
         with sqlite3.connect(db_path) as connection:
             row = connection.execute(
-                "SELECT pid, repo_id, command, started_by, status FROM vllm_processes"
+                "SELECT pid, repo_id, command, port, started_by, status FROM vllm_processes"
             ).fetchone()
 
         assert row[0] == pid
         assert row[1] == "fake/repo"
         assert row[2] == "vllm serve fake/repo --tensor-parallel-size 1"
-        assert row[3]
-        assert row[4] == "running"
+        assert row[3] == 8001
+        assert row[4] 
+        assert row[5] == "running"
     finally:
         os.kill(pid, signal.SIGTERM)
         time.sleep(0.2)

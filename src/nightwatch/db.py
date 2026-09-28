@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS vllm_processes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     pid INTEGER NOT NULL,
     repo_id TEXT NOT NULL,
+    port INTEGER NOT NULL,
     command TEXT NOT NULL,
     started_at TEXT NOT NULL,
     started_by TEXT NOT NULL,
@@ -24,6 +25,10 @@ def init_db(db_path: Path = DEFAULT_DB_PATH) -> None:
     db_path.parent.mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(db_path) as connection:
         connection.execute(_SCHEMA)
+        columns = {row[1] for row in connection.execute("PRAGMA table_info(vllm_processes)")}
+        if "port" not in columns:
+            connection.execute("ALTER TABLE vllm_processes ADD COLUMN port INTEGER " \
+            "NOT NULL DEFAULT 0")
 
 
 def insert_process(
@@ -31,16 +36,17 @@ def insert_process(
     repo_id: str,
     command: str,
     started_by: str,
+    port: int,
     db_path: Path = DEFAULT_DB_PATH,
 ) -> None:
     started_at = datetime.now(UTC).isoformat()
     with sqlite3.connect(db_path) as connection:
         connection.execute(
             """
-            INSERT INTO vllm_processes (pid, repo_id, command, started_at, started_by)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO vllm_processes (pid, repo_id, command, port, started_at, started_by)
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (pid, repo_id, command, started_at, started_by),
+            (pid, repo_id, command, port, started_at, started_by),
         )
 
 
@@ -82,6 +88,7 @@ class ProcessRecord:
     pid: int
     repo_id: str
     command: str
+    port: int
     started_at: str
     started_by: str
     status: str
@@ -91,7 +98,7 @@ def list_processes(db_path: Path = DEFAULT_DB_PATH) -> list[ProcessRecord]:
     with sqlite3.connect(db_path) as connection:
         rows = connection.execute(
             """
-            SELECT id, pid, repo_id, command, started_at, started_by, status
+            SELECT id, pid, repo_id, command, port, started_at, started_by, status
             FROM vllm_processes
             ORDER BY started_at DESC
             """

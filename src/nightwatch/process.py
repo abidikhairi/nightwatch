@@ -1,4 +1,6 @@
 import shutil  
+import shutil
+import socket
 import subprocess
 from getpass import getuser
 from pathlib import Path
@@ -6,7 +8,11 @@ from pathlib import Path
 from nightwatch.db import DEFAULT_DB_PATH, insert_process
 
 
-
+def find_free_port() -> int:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind(("", 0))
+        return sock.getsockname()[1]
+    
 class VllmNotFoundError(Exception):
     """Raised when the vllm executable can not be found in PATH."""
     pass
@@ -16,6 +22,7 @@ def launch_vllm_serve(
     args: list[str],
     repo_id: str,
     command_display: str,
+    port: int,
     db_path: Path = DEFAULT_DB_PATH,
 ) -> int:
 
@@ -41,6 +48,7 @@ def launch_vllm_serve(
         pid=process.pid,
         repo_id=repo_id,
         command=command_display,
+        port=port,
         started_by=getuser(),
         db_path=db_path,
     )

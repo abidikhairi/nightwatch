@@ -51,7 +51,7 @@ class MonitorScreen(Screen):
         table = self.query_one(DataTable)
         table.cursor_type = "row"
         table.zebra_stripes = True
-        table.add_columns("PID", "Repo ID", "Memory", "Started At", "Started By", "Status")
+        table.add_columns("PID", "Repo ID","Port", "Memory", "Started At", "Started By", "Status")
         self.action_refresh_processes()
 
     def action_refresh_processes(self) -> None:
@@ -79,6 +79,7 @@ class MonitorScreen(Screen):
             table.add_row(
                 str(process.pid),
                 process.repo_id,
+                str(process.port),
                 _format_memory(memory),
                 process.started_at,
                 process.started_by,
