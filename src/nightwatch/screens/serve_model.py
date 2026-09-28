@@ -30,7 +30,7 @@ from nightwatch.hf import (
     recommend_deployment,
     search_models,
 )
-from nightwatch.process import VllmNotFoundError, find_free_port, launch_vllm_serveserve 
+from nightwatch.process import VllmNotFoundError, find_free_port, launch_vllm_serve
 from nightwatch.screens.confirm import ConfirmScreen
 
 if TYPE_CHECKING:
